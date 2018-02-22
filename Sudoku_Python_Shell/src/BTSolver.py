@@ -46,7 +46,15 @@ class BTSolver:
         Return: true is assignment is consistent, false otherwise
     """
     def forwardChecking ( self ):
-        return False
+        for con in self.network.getModifiedConstraints(): 
+            for v in con.vars:
+                if v.isAssigned():
+                    for neighbor in self.network.getNeighborsOfVariable(v):
+                        self.trail.push(neighbor)
+                        neighbor.removeValueFromDomain(v.getAssignment())
+                        if len(neighbor.getValues()) == 0: 
+                            return False
+        return True
 
     """
         Part 2 TODO: Implement both of Norvig's Heuristics
@@ -94,7 +102,16 @@ class BTSolver:
         Return: The unassigned variable with the smallest domain
     """
     def getMRV ( self ):
-        return None
+        minimum = self.gameboard.p*self.gameboard.q+1 
+        for v in self.network.variables:
+            if not v.isAssigned():
+                if len(v.getValues()) < minimum:
+                    minimum = len(v.getValues())
+        if minimum == self.gameboard.p*self.gameboard.q+1: 
+            return None
+        for v in self.network.variables:
+            if len(v.getValues()) == minimum:
+                return v
 
     """
         Part 2 TODO: Implement the Degree Heuristic
@@ -142,7 +159,16 @@ class BTSolver:
                 The LCV is first and the MCV is last
     """
     def getValuesLCVOrder ( self, v ):
-        return None
+        lcv = []
+        for value in v.getDomain().values:
+            count = 0
+            for neighbor in self.network.getNeighborsOfVariable(v):
+                if neighbor.getDomain().contains(value):
+                    count += 1
+            lcv.append((value, count))
+        temp = sorted(lcv, key=lambda v: v[1])
+        return temp[:][0]    
+
 
     """
          Optional TODO: Implement your own advanced Value Heuristic
