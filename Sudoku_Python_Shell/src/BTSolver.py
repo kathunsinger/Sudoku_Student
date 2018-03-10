@@ -50,10 +50,11 @@ class BTSolver:
             for v in con.vars:
                 if v.isAssigned():
                     for neighbor in self.network.getNeighborsOfVariable(v):
-                        self.trail.push(neighbor)
-                        neighbor.removeValueFromDomain(v.getAssignment())
-                        if len(neighbor.getValues()) == 0: 
-                            return False
+                        if  neighbor.getDomain().contains(v.getAssignment()):
+                            self.trail.push(neighbor)
+                            neighbor.removeValueFromDomain(v.getAssignment())
+                            if len(neighbor.getValues()) == 0: 
+                                return False
         return True
 
     """
@@ -72,8 +73,52 @@ class BTSolver:
         Return: true is assignment is consistent, false otherwise
     """
     def norvigCheck ( self ):
-        return False
+        print ("entered nor\n")
+        for con in self.network.getModifiedConstraints(): 
+            for v in con.vars:
+                if v.isAssigned():
+                    for neighbor in self.network.getNeighborsOfVariable(v):
+                        if  neighbor.getDomain().contains(v.getAssignment()):
+                            self.trail.push(neighbor)
+                            neighbor.removeValueFromDomain(v.getAssignment())
+                            if len(neighbor.getValues()) == 0: 
+                                return False
 
+        for c in self.network.getConstraints():
+            buckets = [0] * (self.gameboard.p*self.gameboard.q+1)
+            nor = []
+            for v in c.vars:
+                values = v.getValues()
+                for val in values:
+                    nor.append((val,v))
+                    buckets[val] += 1
+            print (nor)
+            print (buckets)
+            for tup in nor:
+                if buckets[tup[0]] == 1:
+                    self.trail.push(tup[1])
+                    tup[1].assignValue(tup[0])
+        return True
+
+
+        '''
+        for c in self.network.getConstraints():
+            count = 0
+            for v in c.vars:
+                if v.isAssigned():
+                    count += 1
+                else:
+                    not_assigned = v
+            if count == (c.size() - 1):
+                for v in c.vars:
+                    if v != not_assigned and not_assigned.domain.contains(v.getAssignment()):
+                        self.trail.push(not_assigned)
+                        not_assigned.removeValueFromDomain(v.getAssignment())
+                if len(not_assigned.getValues()) == 0:
+                    return False
+
+        return True
+'''
     """
          Optional TODO: Implement your own advanced Constraint Propagation
 
@@ -119,7 +164,21 @@ class BTSolver:
         Return: The unassigned variable with the most unassigned neighbors
     """
     def getDegree ( self ):
-        return None
+        max_d = 0
+        max_temp = 0
+        max_var = None;
+        for v in self.network.variables:
+            if not v.isAssigned():
+                for neighbor in self.network.getNeighborsOfVariable(v):
+                    if not neighbor.isAssigned():
+                        max_temp = max_temp + 1
+                if max_temp > max_d:
+                    max_d = max_temp
+                    max_var = v
+                max_temp = 0
+        if max_d == 0:
+            return None
+        return max_var
 
     """
         Part 2 TODO: Implement the Minimum Remaining Value Heuristic
@@ -129,8 +188,57 @@ class BTSolver:
                 and, second, the most unassigned neighbors
     """
     def MRVwithTieBreaker ( self ):
+        mrv = []
+        minimum = self.gameboard.p*self.gameboard.q+1 
+        for v in self.network.variables:
+            if not v.isAssigned():
+                if len(v.getValues()) < minimum:
+                    minimum = len(v.getValues())
+        if minimum == self.gameboard.p*self.gameboard.q+1: 
+            return None
+
+        for v in self.network.variables:
+            if len(v.getValues()) == minimum:
+                mrv.append(v)
+        if len(mrv) == 0:
+            return None
+        if len(mrv) == 1:
+            return mrv[0]
+        
+        max_d = 0
+        max_temp = 0
+        max_var = mrv[0]
+        for v in mrv:
+            for neighbor in self.network.getNeighborsOfVariable(v):
+                if not neighbor.isAssigned():
+                    max_temp += 1
+            if max_temp > max_d:
+                max_d = max_temp
+                max_var = v
+            max_temp = 0
+        return max_var
+    
+    """
+         Optional TODO: Implement your own advanced Variable Heuristic
+
+         Completing the three tourn heuristic will automatically enter
+         your program into a tournament.
+     """
+    def getTournVar ( self ):
         return None
 
+        max_temp = 0
+        max_var = mrv[0]
+        for v in mrv:
+            for neighbor in self.network.getNeighborsOfVariable(v):
+                if not neighbor.isAssigned():
+                    max_temp += 1
+            if max_temp > max_d:
+                max_d = max_temp
+                max_var = v
+            max_temp = 0
+        return max_var
+    
     """
          Optional TODO: Implement your own advanced Variable Heuristic
 
@@ -239,27 +347,6 @@ class BTSolver:
     def selectNextVariable ( self ):
         if self.varHeuristics == "MinimumRemainingValue":
             return self.getMRV()
-
-        if self.varHeuristics == "Degree":
-            return self.getDegree()
-
-        if self.varHeuristics == "MRVwithTieBreaker":
-            return self.MRVwithTieBreaker()
-
-        if self.varHeuristics == "tournVar":
-            return self.getTournVar()
-
-        else:
-            return self.getfirstUnassignedVariable()
-
-    def getNextValues ( self, v ):
-        if self.valHeuristics == "LeastConstrainingValue":
-            return self.getValuesLCVOrder( v )
-
-        if self.valHeuristics == "tournVal":
-            return self.getTournVal( v )
-
-        else:
             return self.getValuesInOrder( v )
 
     def getSolution ( self ):
