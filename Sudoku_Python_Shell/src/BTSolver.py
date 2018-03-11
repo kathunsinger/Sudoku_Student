@@ -82,9 +82,10 @@ class BTSolver:
                             neighbor.removeValueFromDomain(v.getAssignment())
                             if len(neighbor.getValues()) == 0: 
                                 return False
-        
+         
         for c in self.network.getConstraints():
             buckets = [0] * (self.gameboard.p*self.gameboard.q+1)
+            ones = []
             nor = []
             for v in c.vars:
                 values = v.getValues()
@@ -97,25 +98,6 @@ class BTSolver:
                     tup[1].assignValue(tup[0])
         return True
         
-
-        '''
-        for c in self.network.getConstraints():
-            count = 0
-            for v in c.vars:
-                if v.isAssigned():
-                    count += 1
-                else:
-                    not_assigned = v
-            if count == (c.size() - 1):
-                for v in c.vars:
-                    if v != not_assigned and not_assigned.domain.contains(v.getAssignment()):
-                        self.trail.push(not_assigned)
-                        not_assigned.removeValueFromDomain(v.getAssignment())
-                if len(not_assigned.getValues()) == 0:
-                    return False
-
-        return True
-'''
     """
          Optional TODO: Implement your own advanced Constraint Propagation
 
