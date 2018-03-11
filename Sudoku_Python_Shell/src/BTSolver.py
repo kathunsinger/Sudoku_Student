@@ -73,7 +73,6 @@ class BTSolver:
         Return: true is assignment is consistent, false otherwise
     """
     def norvigCheck ( self ):
-        print ("entered nor\n")
         for con in self.network.getModifiedConstraints(): 
             for v in con.vars:
                 if v.isAssigned():
@@ -83,7 +82,7 @@ class BTSolver:
                             neighbor.removeValueFromDomain(v.getAssignment())
                             if len(neighbor.getValues()) == 0: 
                                 return False
-
+        
         for c in self.network.getConstraints():
             buckets = [0] * (self.gameboard.p*self.gameboard.q+1)
             nor = []
@@ -92,14 +91,12 @@ class BTSolver:
                 for val in values:
                     nor.append((val,v))
                     buckets[val] += 1
-            print (nor)
-            print (buckets)
             for tup in nor:
-                if buckets[tup[0]] == 1:
+                if buckets[tup[0]] == 1 and not tup[1].isAssigned():
                     self.trail.push(tup[1])
                     tup[1].assignValue(tup[0])
         return True
-
+        
 
         '''
         for c in self.network.getConstraints():
@@ -316,7 +313,7 @@ class BTSolver:
             # Store place in trail and push variable's state on trail
             self.trail.placeTrailMarker()
             self.trail.push( v )
-
+            
             # Assign the value
             v.assignValue( i )
 
@@ -344,10 +341,33 @@ class BTSolver:
         else:
             return self.assignmentsCheck()
 
+
     def selectNextVariable ( self ):
         if self.varHeuristics == "MinimumRemainingValue":
             return self.getMRV()
+
+        if self.varHeuristics == "Degree":
+            return self.getDegree()
+
+        if self.varHeuristics == "MRVwithTieBreaker":
+            return self.MRVwithTieBreaker()
+
+        if self.varHeuristics == "tournVar":
+            return self.getTournVar()
+
+        else:
+            return self.getfirstUnassignedVariable()
+
+    def getNextValues ( self, v ):
+        if self.valHeuristics == "LeastConstrainingValue":
+            return self.getValuesLCVOrder( v )
+
+        if self.valHeuristics == "tournVal":
+            return self.getTournVal( v )
+
+        else:
             return self.getValuesInOrder( v )
 
     def getSolution ( self ):
         return self.network.toSudokuBoard(self.gameboard.p, self.gameboard.q)
+ 
